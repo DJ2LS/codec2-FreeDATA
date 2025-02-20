@@ -14,6 +14,8 @@ pyinstaller
 websocket-client
 fastapi[standard]
 uvicorn[standard]
+pywebview
+appdirs
 
 # Development and test dependencies
 autopep8

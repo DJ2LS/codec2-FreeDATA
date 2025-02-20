@@ -7,22 +7,23 @@ sys.path.append(script_directory)
 import signal
 import queue
 import asyncio
-import webbrowser
+import threading
+import time
+import uvicorn
+import webview  # pywebview für die GUI
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-import uvicorn
-import threading
+import structlog
+from appdirs import user_data_dir, user_cache_dir
+
 from config import CONFIG
 import audio
 import service_manager
 import state_manager
 import websocket_manager
-
 import event_manager
-import structlog
-
 
 from message_system_db_manager import DatabaseManager
 from schedule_manager import ScheduleManager
@@ -43,13 +44,12 @@ API_VERSION = 3
 LICENSE = 'GPL3.0'
 DOCUMENTATION_URL = 'https://wiki.freedata.app'
 
-# adjust asyncio for windows usage for avoiding a Assertion Error
+# adjust asyncio for Windows usage to avoid an Assertion Error
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #print("startup")
     yield
     stop_server()
 
@@ -61,51 +61,38 @@ app.include_router(radio_router, prefix="/radio")
 app.include_router(modem_router, prefix="/modem")
 app.include_router(freedata_router, prefix="/freedata")
 app.include_router(websocket_router, prefix="")
-# custom logger for fastapi
-#setup_logging()
+
 logger = structlog.get_logger()
 
+# Ermittlung des GUI-Verzeichnisses
 potential_gui_dirs = [
-    "../freedata_gui/dist", # running server with "python3 server.py
-    "freedata_gui/dist", # running sever with ./tools/run-server.py
-    "FreeDATA/freedata_gui/dist", # running server with bash run-server...
-    os.path.join(os.path.dirname(__file__), "gui") # running server as nuitka bundle
+    "../freedata_gui/dist",                # z.B. beim Start mit "python3 server.py"
+    "freedata_gui/dist",                   # z.B. beim Start mit ./tools/run-server.py
+    "FreeDATA/freedata_gui/dist",          # z.B. beim Start mit bash run-server...
+    os.path.join(os.path.dirname(__file__), "gui")  # z.B. beim Start als Nuitka-Bundle
 ]
 
-# Check which directory exists and set gui_dir accordingly
 gui_dir = None
 for dir_path in potential_gui_dirs:
     if os.path.isdir(dir_path):
         gui_dir = dir_path
         break
 
-# Configure app to serve static files if gui_dir is found
 if gui_dir:
     app.mount("/gui", StaticFiles(directory=gui_dir, html=True), name="static")
 else:
     logger.warning("GUI directory not found. Please run `npm i && npm run build` inside `freedata_gui`.")
 
-
-
+# HTTP-Middleware (Cache-Control, Logging etc.)
 @app.middleware("http")
 async def http_middleware(request: Request, call_next):
     response = await call_next(request)
-
-    # Disable caching
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
-    response.headers["Pragma"] = "no-cache"  # For HTTP/1.0 backward compatibility
-
-    # Enable caching for 1 day
-    # response.headers["Cache-Control"] = "public, max-age=86400"  # Cache for 86400 seconds (1 day)
-    # response.headers["Pragma"] = "cache"  # backward compatibility with HTTP/1.0
-    # response.headers["Expires"] = "0"  # Forces modern clients to use max-age
-
-    # Log requests
+    response.headers["Pragma"] = "no-cache"
     logger.info(f"[API] {request.method}", url=str(request.url), response_code=response.status_code)
     return response
 
-
-# CORS
+# CORS-Einstellungen
 origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
@@ -115,10 +102,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
-
-# Set config file to use
 def set_config():
     config_file = os.getenv(CONFIG_ENV_VAR, os.path.join(script_directory, DEFAULT_CONFIG_FILE))
     if os.path.exists(config_file):
@@ -128,31 +111,23 @@ def set_config():
         sys.exit(1)
     return config_file
 
-
-
-
-
-
-# Signal Handler
+# Signal Handler und Serverstopp
 def signal_handler(sig, frame):
     print("\n------------------------------------------")
     logger.warning("[SHUTDOWN] Received SIGINT....")
     stop_server()
 
 def stop_server():
-    # INFO attempt stopping ongoing transmission for reducing chance of stuck PTT
     if hasattr(app, 'state_manager'):
         logger.warning("[SHUTDOWN] stopping ongoing transmissions....")
         try:
             for session in app.state_manager.arq_irs_sessions.values():
-                #session.abort_transmission()
                 session.transmission_aborted()
             for session in app.state_manager.arq_iss_sessions.values():
                 session.abort_transmission(send_stop=False)
                 session.transmission_aborted()
         except Exception as e:
             print(f"Error during transmission stopping: {e}")
-
     if hasattr(app, 'wsm'):
         app.wsm.shutdown()
     if hasattr(app, 'radio_manager'):
@@ -167,24 +142,35 @@ def stop_server():
         app.service_manager.stop_modem()
     if hasattr(app, 'socket_interface_manager') and app.socket_interface_manager:
         app.socket_interface_manager.stop_servers()
-    if hasattr(app, 'socket_interface_manager') and app.socket_interface_manager:
-        app.socket_interface_manager.stop_servers()
     audio.terminate()
     logger.warning("[SHUTDOWN] Shutdown completed")
     try:
-        # it seems sys.exit causes problems since we are using fastapi
-        # fastapi seems to close the application
-        #sys.exit(0)
         os._exit(0)
-
-        pass
     except Exception as e:
         logger.warning("[SHUTDOWN] Shutdown completed", error=e)
 
+# Startet den Uvicorn-Server in einem separaten Thread (für den WebView-Modus)
+def start_uvicorn_server(modemaddress, modemport):
+    uvicorn.run(app, host=modemaddress, port=modemport, log_config=None, log_level="info")
 
-def open_browser_after_delay(url, delay=2):
-    threading.Event().wait(delay)
-    webbrowser.open(url, new=0, autoraise=True)
+# Startet das pywebview-Fenster und definiert einen on_closed Callback,
+# der beim Schließen des Fensters den Server herunterfährt.
+def start_gui(url):
+    print("Opening webview at:", url)
+
+    APP_NAME = "FreeDATA"
+    APP_AUTHOR = ""
+
+    # Get the proper user data directory for the current platform
+    user_data_folder = user_data_dir(APP_NAME, APP_AUTHOR)
+
+    # Ensure the directory exists
+    os.makedirs(user_data_folder, exist_ok=True)
+    print(user_data_folder)
+    window = webview.create_window("FreeDATA", url, width=1280, height=1024, confirm_close=True)
+    window.events.closing += stop_server
+    webview.settings['ALLOW_DOWNLOADS'] = True
+    webview.start(icon='../freedata_gui/public/icon_cube_border.png', storage_path=user_data_folder)
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
@@ -213,25 +199,36 @@ def main():
     modemaddress = conf['NETWORK'].get('modemaddress', '127.0.0.1')
     modemport = int(conf['NETWORK'].get('modemport', 5000))
 
-    # check if modemadress is empty - known bug caused by older versions
-    if modemaddress in ['', None]:
+    if not modemaddress or modemaddress == '':
         modemaddress = '127.0.0.1'
 
+
+    webview_mode = "--webview" in sys.argv
     if gui_dir and os.path.isdir(gui_dir):
         url = f"http://{modemaddress}:{modemport}/gui"
-
         logger.info("---------------------------------------------------")
         logger.info("                                                   ")
         logger.info(f"[GUI] AVAILABLE ON {url}")
-        logger.info("just open it in your browser")
         logger.info("                                                   ")
         logger.info("---------------------------------------------------")
 
-        if conf['GUI'].get('auto_run_browser', True):
-            threading.Thread(target=open_browser_after_delay, args=(url, 2)).start()
+        if webview_mode:
+            # in WebView Mode we always want local host
+            modemaddress = '127.0.0.1'
+            url = f"http://{modemaddress}:{modemport}/gui"
 
-    uvicorn.run(app, host=modemaddress, port=modemport, log_config=None, log_level="info")
+            # WebView-Mode: Start Server then open Webview
+            server_thread = threading.Thread(target=start_uvicorn_server, args=(modemaddress, modemport), daemon=True)
+            server_thread.start()
+            time.sleep(2)
+            start_gui(url)
+        else:
+            # CLI-Mode: Start Server blocking
+            uvicorn.run(app, host=modemaddress, port=modemport, log_config=None, log_level="info")
 
+    else:
+        logger.warning("GUI not compiled, starting server anyway")
+        uvicorn.run(app, host=modemaddress, port=modemport, log_config=None, log_level="info")
 
 if __name__ == "__main__":
     main()

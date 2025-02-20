@@ -131,7 +131,7 @@ fi
 #////////////////////////////////////////////////////////////////
 #	Config and DB-File macOS like
 #
-FREEDATA_CONFIG=$HOME/Library/Application\ Support/FreeDATA/config.ini FREEDATA_DATABASE=$HOME/Library/Application\ Support/FreeDATA/freedata-messages.db python3 $serverdir/server.py > FreeDATA-server.log 2>&1 &
+FREEDATA_CONFIG=$HOME/Library/Application\ Support/FreeDATA/config.ini FREEDATA_DATABASE=$HOME/Library/Application\ Support/FreeDATA/freedata-messages.db python3 $serverdir/server.py --webview > FreeDATA-server.log 2>&1 &
 serverpid=$!
 echo "Process ID of FreeDATA server is" $serverpid
 
