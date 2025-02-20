@@ -28,6 +28,7 @@ coverage.xml
 
 #GUI_WEB
 /freedata_gui/dist
+/freedata_gui/node_modules/
 /freedata_gui/node_modules!/venv/
 
 # venv packages

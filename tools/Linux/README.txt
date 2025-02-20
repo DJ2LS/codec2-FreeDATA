@@ -1,5 +1,9 @@
 Suggested instructions for using the install and run scripts.
 
+Before running the install script, ensure that your account is in the
+"dialout" group, and that your account has "sudo" privileges.  Refer to 
+your particular OS variant for instructions on how to do this.
+
 To install the FreeDATA software:
 
 Open a terminal shell and run the following commands:

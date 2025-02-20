@@ -67,12 +67,12 @@ window.addEventListener(
 
 <template>
   <div class="card h-100">
-    <div class="card-header p-0">
+    <div class="card-header">
       <i class="bi bi-broadcast" style="font-size: 1.2rem"></i>&nbsp;
       <strong>Broadcasts</strong>
     </div>
-    <div class="card-body overflow-auto p-0">
-      <div class="input-group input-group-sm mb-0">
+    <div class="card-body overflow-auto">
+      <div class="input-group">
         <input
           type="text"
           class="form-control"
@@ -85,7 +85,7 @@ window.addEventListener(
           v-model="dxcallPing"
         />
         <button
-          class="btn btn-sm btn-outline-secondary"
+          class="btn btn-outline-secondary"
           id="sendPing"
           type="button"
           data-bs-placement="bottom"
@@ -100,7 +100,7 @@ window.addEventListener(
         </button>
 
         <button
-          class="btn btn-sm btn-outline-secondary ms-1"
+          class="btn btn-outline-secondary ms-1"
           id="sendCQ"
           type="button"
           title="Send a CQ to the world"
@@ -113,7 +113,7 @@ window.addEventListener(
         <button
           type="button"
           id="startBeacon"
-          class="btn btn-sm ms-1"
+          class="btn ms-1"
           @click="startStopBeacon"
           :class="{
             'btn-success': state.beacon_state,

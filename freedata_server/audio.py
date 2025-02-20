@@ -205,6 +205,52 @@ def set_audio_volume(datalist: np.ndarray, dB: float) -> np.ndarray:
     return np.clip(scaled_data, -32768, 32767).astype(np.int16)
 
 
+def normalize_audio(datalist: np.ndarray) -> np.ndarray:
+    """
+    Normalize the audio samples so the loudest value reaches 95% of the maximum possible value for np.int16
+    :param datalist: Audio samples to normalize
+    :type datalist: np.ndarray
+    :return: Normalized audio samples, clipped to the range of int16
+    :rtype: np.ndarray
+    """
+    if not isinstance(datalist, np.ndarray):
+        print("[MDM] Invalid datalist type. Expected np.ndarray.")
+        return datalist
+
+    # Ensure datalist is not empty
+    if datalist.size == 0:
+        print("[MDM] Datalist is empty. Returning unmodified.")
+        return datalist
+
+    # Find the maximum absolute value in the data
+    max_value = np.max(np.abs(datalist))
+
+    # If max_value is 0, return the datalist (avoid division by zero)
+    if max_value == 0:
+        print("[MDM] Max value is zero. Cannot normalize. Returning unmodified.")
+        return datalist
+
+    # Define the target max value as 95% of the maximum for np.int16
+    target_max_value = int(32767 * 0.95)
+
+    # Compute the normalization factor
+    normalization_factor = target_max_value / max_value
+
+    # Normalize the audio data
+    normalized_data = datalist * normalization_factor
+
+    # Clip to the int16 range and cast
+    normalized_data = np.clip(normalized_data, -32768, 32767).astype(np.int16)
+
+    # Debug information: normalization factor, loudest value before, and after normalization
+    loudest_before = max_value
+    loudest_after = np.max(np.abs(normalized_data))
+    print(f"[AUDIO] Normalization factor: {normalization_factor:.6f}, Loudest before: {loudest_before}, Loudest after: {loudest_after}")
+
+    return normalized_data
+
+
+
 RMS_COUNTER = 0
 CHANNEL_BUSY_DELAY = 0
 SLOT_DELAY = [0, 0, 0, 0, 0]

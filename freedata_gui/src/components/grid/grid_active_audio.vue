@@ -9,7 +9,7 @@ const state = useStateStore(pinia);
 
 <template>
   <div class="card w-100 h-100">
-    <div class="card-header p-0 mb-1">
+    <div class="card-header mb-1">
       <i class="bi bi-volume-up" style="font-size: 1rem"></i>&nbsp;
       <strong>Audio</strong>
     </div>

@@ -77,6 +77,13 @@ th {
   border-radius: 10px;
 }
 
+emoji-picker {
+  width: 100%;
+}
+
+
+
+
 /* force gpu usage
 https://stackoverflow.com/questions/13176746/css-keyframe-animation-cpu-usage-is-high-should-it-be-this-way/13293044#13293044
 */

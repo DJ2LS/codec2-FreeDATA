@@ -133,41 +133,26 @@
 
 
                           <div class="alert alert-warning mt-3" role="alert">
- In case of unusual problems, you can stop and reload the internal modem manually.
+ In case of unusual problems, you can reload the internal modem manually. If the problem persists, consider a server restart.
 
 </div>
                           <div class="input-group input-group-sm">
                               <label class="input-group-text w-50">Manual modem restart</label>
-                              <label class="input-group-text">
+                              <label class="input-group-text w-50">
                               <button
                                  type="button"
                                  id="startModem"
-                                 class="btn btn-sm btn-outline-success"
+                                 class="btn btn-sm btn-outline-secondary w-100"
                                  data-bs-toggle="tooltip"
                                  data-bs-trigger="hover"
                                  data-bs-html="false"
-                                 title="Start the Modem. Please set your audio and radio settings first!"
-                                 @click="startModem"
-                                 :class="{ disabled: state.is_modem_running }"
+                                 title="Restart the Modem. Please set your audio and radio settings first!"
+                                 @click="reloadModem"
                                  >
-                              <i class="bi bi-play-fill"></i>
+                              <i class="bi bi-arrow-clockwise"></i>
                               </button>
                               </label>
-                              <label class="input-group-text">
-                              <button
-                                 type="button"
-                                 id="stopModem"
-                                 class="btn btn-sm btn-outline-danger"
-                                 data-bs-toggle="tooltip"
-                                 data-bs-trigger="hover"
-                                 data-bs-html="false"
-                                 title="Stop the Modem."
-                                 @click="stopModem"
-                                 :class="{ disabled: !state.is_modem_running }"
-                                 >
-                              <i class="bi bi-stop-fill"></i>
-                              </button>
-                              </label>
+
                            </div>
 
 
@@ -316,7 +301,7 @@ setActivePinia(pinia);
 
 // Store imports
 import { settingsStore as settings, onChange } from '../store/settingsStore.js';
-import { sendModemCQ } from '../js/api.js';
+import { sendModemCQ, startModem, stopModem } from '../js/api.js';
 import { useStateStore } from '../store/stateStore.js';
 import { useAudioStore } from '../store/audioStore';
 import { useSerialStore } from '../store/serialStore.js';
@@ -411,4 +396,10 @@ function testHamlib() {
 function reloadGUI() {
   location.reload();
 }
+
+function reloadModem(){
+  stopModem();
+  setTimeout(startModem, 5000); // Executes startModem after 5000 milliseconds as server needs to shutdown first
+}
+
 </script>

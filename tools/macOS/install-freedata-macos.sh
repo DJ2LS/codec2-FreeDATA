@@ -3,32 +3,36 @@
 # Simple script to install FreeDATA in Linux
 # Dj Merrill - N1JOV
 #
-# Currently tested in Debian [11, 12], Ubuntu [22.04, 24.04], Fedora [40,41]
-# Untested additions for Linux Mint [21.3]
+# modified Version for macOS
+# All credits to the original creators
+# Oliver - HB9HBO
 # 
 # Run this script by typing in the terminal (without the quotes):
-# "bash install-freedata-linux.sh" to install from the main branch 
-# "bash install-freedata-linux.sh develop" to install from the develop branch
+# "bash install-freedata-macos.sh" to install from the main branch 
+# "bash install-freedata-macos.sh develop" to install from the develop branch
 #
 # This script creates three subdirectories in the directory it is run
 # FreeDATA: Contains the FreeDATA software
 # FreeDATA-venv: Contains the Python virtual environment
 # FreeDATA-hamlib: Contains the hamlib libraries
 #
-# FreeDATA config file is stored in $HOME/.config/FreeDATA/config.ini
-# See the run-freedata-linux.sh for more details
+# FreeDATA config file is stored in $HOME/Library/Application Support/FreeDATA/config.ini
+# See the run-freedata-macos.sh for more details
+#
 #
 #
 # Changelog:
-# 2.3:	01 Feb 2025 (deej)
-# 	Add untested additions for Linux Mint 21.3
+# 2.4:	29 Jan 2025 (hb9hbo)
+#	OS version handling and further macports refinement
 #
-# 2.2:	01 Feb 2025 (deej)
-# 	Check if account is in the dialout group
-#	Add a warning about account needing to be in sudoers
+# 2.3:  26 Jan 2025 (vk1kcm)
+#	clean up macport install
 #
-# 2.1:	01 Feb 2025 (deej)
-# 	Add support for Fedora 41
+# 2.2:	24 Jan 2025 (hb9hbo)
+#	install with brew and macports
+#
+# 2.1:	23 Jan 2025 (hb9hbo)
+#	Initial macOS version
 #
 # 2.0:	04 Oct 2024 (deej)
 # 	Add support for Fedora 40
@@ -70,15 +74,6 @@
 # 1.0:	Initial release 25 Apr 2024 supporting Debian 12
 #
 
-# Account needs to be in the dialout group for some radios to work
-checkdial=`grep -i $USER /etc/group | grep -i dialout`
-
-if [ -z "$checkdial" ];
-then
-	echo "Please add your account" $USER "to the dialout group in /etc/group and then re-run this script."
-	exit 1;
-fi
-
 case $1 in
    "" | "main")
 	args="main"
@@ -95,99 +90,206 @@ case $1 in
    ;;
 esac
 
-osname=`grep -E '^(NAME)=' /etc/os-release | cut -d\" -f2`
-osversion=`grep -E '^(VERSION_ID)=' /etc/os-release | cut -d\" -f2`
 
-echo "Running on" $osname "version" $osversion
+
+
+#///////////////////////////////////////////////////////////////////////////////
+# find macos and version	
+# 
+osname=`sw_vers -productName`
+osversion=`sw_vers -productVersion | cut -d"." -f1`
+
+
+#////////////////////////////////////////////////////////////////////////////////
+# find installed additional Package Manager
+#	
+port=`which port`
+brew=`which brew`
+
+if [[ -x $port && -x $brew ]];
+then
+	echo "MacPorts and homebrew installed!"
+	echo "selecting MacPorts for installation"
+	pkgmgr='macports'
+	brew=''
+fi
+
+if [[ -x $port  ]];
+then
+	pkgmgr='macports'
+	pkgmgrversion=`port version | cut -d" " -f2 | awk -F. '{print $1 "." $2}'`
+elif [[ -x $brew ]];
+then
+	pkgmgr='homebrew'
+else
+	echo "Neither MacPorts nor homebrew installed"
+	echo "please install one!"
+	exit 1
+fi
+
+
+echo "Running on $osname version $osversion with $pkgmgr"
+
 
 echo "*************************************************************************"
 echo "Installing software prerequisites"
 echo "If prompted, enter your password to run the sudo command"
-echo ""
-echo "If the sudo command gives an error saying Sorry, or not in sudoers file,"
-echo "or something to that effect, check to make sure your account has sudo"
-echo "privileges.  This generally means a listing in /etc/sudoers or in a file"
-echo "in the directory /etc/sudoers.d"
 echo "*************************************************************************"
+
+
+
+#////////////////////////////////////////////////////////////////////////////////
+# Variables for MacPorts install
+# we don't want break an already installed and working python3
+#
+mp_pkgs="wget cmake portaudio nvm nodejs22 npm10"
+mp_path="/opt/local/bin"
+mp_py_version="313"
+mp_pkg_python="python$mp_py_version"
+mp_pkg_pip="py$mp_py_version-pip"
+mp_pkg_virtualenv="py$mp_py_version-virtualenv"
+mp_path_python="$mp_path/python3"
+mp_path_pip="$mp_path/pip3"
+mp_path_virtualenv="$mp_path/virtualenv"
+mp_select_python=0
+mp_select_pip=0
+mp_select_virtualenv=0
 
 case $osname in
-   "Debian GNU/Linux")
+	"macOS")
 	case $osversion in
-	   "11" | "12")
-		sudo apt install --upgrade -y fonts-noto-color-emoji git build-essential cmake python3 portaudio19-dev python3-pyaudio python3-pip python3-colorama python3-venv wget
-	   ;;
+		"14" | "15")
+			case $pkgmgr in
+				"macports")
 
-	   *)
-	   	echo "*************************************************************************"
-	   	echo "This version of Linux is not yet supported by this script."
-	   	echo $osname $osversion
-	   	echo "*************************************************************************"
+					#////////////////////////////////////////////////////////////////////////////////
+					# update the MacPorts package cache
+					#
+					echo "Installing FreeDATA on top of MacPorts"
+					sudo port selfupdate
+
+
+					#////////////////////////////////////////////////////////////////////////////////
+					# Check for working python3 in macports
+					#
+					if [ ! -f "$mp_path_python" ] && [ ! -x "$mp_path_python" ];
+					then
+						echo "Python3 not installed, add $mp_pkg_python"
+						mp_pkgs="$mp_pkg_python $mp_pkgs"
+						mp_select_python=1
+					fi
+	
+	
+					#////////////////////////////////////////////////////////////////////////////////
+					# Check for working pip in macports
+					#
+					if [ ! -f "$mp_path_pip" ] && [ ! -x "$mp_path_pip" ];
+					then
+						echo "Python pip not installed, add $mp_pkg_pip"
+						mp_pkgs="$mp_pkg_pip $mp_pkgs"
+						mp_select_pip=1
+					fi
+	
+
+					#////////////////////////////////////////////////////////////////////////////////
+					# Check for installed virtualenv  in macports
+					#
+					if [ ! -f "$mp_path_virtualenv" ] && [ ! -x "$mp_path_virtualenv" ];
+					then
+						echo "Python pip not installed, add $mp_pkg_virtualenv"
+						mp_pkgs="$mp_pkg_virtualenv $mp_pkgs"
+						mp_select_virtualenv=1
+					fi
+	
+	
+					#////////////////////////////////////////////////////////////////////////////////
+					# install required packages
+					#
+					echo "Installing required Packages."			
+					sudo port -N install $mp_pkgs
+	
+	
+					#////////////////////////////////////////////////////////////////////////////////
+					# select python3.10 and/or pip313 as the default version, if not installed
+					#
+					if [ "$mp_select_python" -eq 1 ];
+					then
+						echo "Selecting $mp_pkg_python"
+						sudo port select --set python3 "python$mp_py_version"
+					fi
+					if [ "$mp_select_pip" -eq 1 ];
+					then
+						echo "Selecting $mp_pkg_pip"
+						sudo port select --set pip3 "pip$mp_py_version"
+					fi
+					if [ "$mp_select_virtualenv" -eq 1 ];
+					then
+						echo "Selecting $mp_pkg_virtualenv"
+						sudo port select --set virtualenv "virtualenv$mp_py_version"
+					fi
+
+					#////////////////////////////////////////////////////////////////////////////////
+					# adding macports Path to $PATH
+					#
+					if [[ ! $PATH =~ "$mp_path" ]];
+					then
+						echo "Adding $mp_path to \$PATH"
+						export PATH="$mp_path":$PATH
+					fi
+					;;
+	
+				"homebrew")
+					#/////////////////////////////////////////////////////////////////////////
+					# more testing needed
+					echo "Installing FreeDATA on top of homebrew"
+					brew update
+					brew install wget cmake portaudio python pyenv-virtualenv nvm node@22 npm
+					export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/bin:$PATH"
+					;;
+	
+				*)
+					echo "*************************************************************************"
+					echo "$osname $osversion $pkgmgr"
+					echo "This installation is not compatible, please install macports or homebrew"
+					echo "*************************************************************************"
+					exit 1
+			   		;;
+			esac
+			;;
+
+		*)
+			echo "*************************************************************************"
+			echo "This version of MacOS is not yet supported by this script."
+			echo $osname $osversion
+			echo "*************************************************************************"
+			exit 1
+			;;
+	esac
+	;;
+
+	*)
+		echo "*************************************************************************"
+		echo "This Operating System is not supported"
+		echo $osname $osversion
+		echo "*************************************************************************"
 		exit 1
-	   ;;
+		;;
 
-	esac
-
-   ;;
-
-   "Ubuntu" | "Linux Mint")
-	case $osversion in
-	   "21.3" | "22.04" | "24.04")
-		sudo apt install --upgrade -y fonts-noto-color-emoji git build-essential cmake python3 portaudio19-dev python3-pyaudio python3-pip python3-colorama python3-venv wget
-	   ;;
-
-	   *)
-	   	echo "*************************************************************************"
-	   	echo "This version of Linux is not yet supported by this script."
-	   	echo $osname $osversion
-	   	echo "*************************************************************************"
-		exit 1
-	   ;;
-	esac
-   ;;
-   "Fedora Linux")
-	case $osversion in
-	   "VERSION_ID=40" | "VERSION_ID=41")
-		sudo dnf install -y git cmake make automake gcc gcc-c++ kernel-devel wget portaudio-devel python3-pyaudio python3-pip python3-colorama python3-virtualenv google-noto-emoji-fonts python3-devel
-	   ;;
-	esac
-   ;;
-
-   *)
-	echo "*************************************************************************"
-	echo "This version of Linux is not yet supported by this script."
-	echo $osname $osversion
-	echo "*************************************************************************"
-	exit 1
-   ;;
 esac
 
-echo "*************************************************************************"
-echo "Installing nvm and node v 20 into ~/.nvm"
-echo "*************************************************************************"
-wget https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh
-if [ -f "install.sh" ];
+
+
+#///////////////////////////////////////////////////////////////////////////////
+# find No CPU's and use half of them for compiling (make -j $ncpu)
+#
+ncpu=`sysctl hw.ncpu | awk '{print $2}'`
+ncpu=$(($ncpu / 2))
+if [ $ncpu -lt 1 ];
 then
-	XDG_CONFIG_HOME=""
-	chmod 750 install.sh
-	./install.sh
-else
-	echo "Something went wrong.  nvm install.sh not downloaded."
-	exit 1
+	ncpu=1
 fi
 
-if [ -f "$HOME/.nvm/bash_completion" ];
-then
-	export NVM_DIR="$HOME/.nvm"
-	[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-	nvm install 20
-	echo "npm is version" `npm -v`
-	echo "node is version" `node -v`
-	rm -f install.sh
-else
-	echo "Something went wrong.  $HOME/.nvm environment not created properly."
-	exit 1
-fi
+
 
 echo "*************************************************************************"
 echo "Checking for hamlib 4.5.5 in FreeDATA-hamlib"
@@ -221,7 +323,7 @@ then
 	wget https://github.com/Hamlib/Hamlib/releases/download/4.5.5/hamlib-4.5.5.tar.gz
 	if [ -f "hamlib-4.5.5.tar.gz" ];
 	then
-		tar -xplf hamlib-4.5.5.tar.gz
+		tar -xf hamlib-4.5.5.tar.gz
 	else
 		echo "Something went wrong.  hamlib-4.5.5.tar.gz not downloaded."
 		exit 1
@@ -229,8 +331,13 @@ then
 	if [ -d "hamlib-4.5.5" ];
 	then
 		cd hamlib-4.5.5
-		./configure --prefix=$curdir/FreeDATA-hamlib
-		make
+
+
+		#///////////////////////////////////////////////////////////////////////////////
+		# make sure the Libraries and Includes where found, no need for libusb
+		#
+		./configure --prefix=$curdir/FreeDATA-hamlib CPPFLAGS="-I/opt/local/include" LDFLAGS="-L/opt/local/lib/" --without-libusb
+		make -j $ncpu
 		make install
 		cd ..
 	else
@@ -247,6 +354,7 @@ then
 		rm -rf hamlib-4.5.5
         fi
 fi
+
 
 echo "*************************************************************************"
 echo "Checking for old FreeDATA directories"
@@ -287,7 +395,7 @@ fi
 echo "*************************************************************************"
 echo "Updating pip and wheel"
 echo "*************************************************************************"
-pip install --upgrade pip wheel
+pip3 install --upgrade pip wheel
 
 echo "*************************************************************************"
 echo "Downloading the FreeDATA software from the git repo"
@@ -303,9 +411,9 @@ then
     git clone https://github.com/DJ2LS/FreeDATA.git -b $args
 else
     echo "Downloading regular version"
-  git clone https://github.com/DJ2LS/FreeDATA.git
-
+	git clone https://github.com/DJ2LS/FreeDATA.git
 fi
+
 
 echo "*************************************************************************"
 echo "Changing Directory into FreeDATA"
@@ -318,15 +426,29 @@ else
 	exit 1
 fi
 
+
 echo "*************************************************************************"
 echo "Installing required Python programs into the virtual environment"
 echo "*************************************************************************"
-pip install --upgrade -r requirements.txt
+
+#///////////////////////////////////////////////////////////////////////////////
+# Compiler can't find the Includes and Libraries
+#	
+if [ $pkgmgr == "macports" ];
+then
+	CFLAGS="-I/opt/local/include" LDFLAGS="-L/opt/local/lib" pip3 install --upgrade -r requirements.txt
+fi
+if [ $pkgmgr == "homebrew" ];
+then
+	CFLAGS="-I/opt/homebrew/include" LDFLAGS="-L/opt/homebrew/lib" pip3 install --upgrade -r requirements.txt
+fi
+
 
 echo "*************************************************************************"
 echo "Changing into the server directory"
 echo "*************************************************************************"
 cd freedata_server/lib
+
 
 echo "*************************************************************************"
 echo "Checking and removing any old codec2 libraries"
@@ -340,6 +462,7 @@ echo "*************************************************************************"
 echo "Downloading the latest codec library"
 echo "*************************************************************************"
 git clone https://github.com/drowe67/codec2.git
+
 
 echo "*************************************************************************"
 echo "Changing into the codec2 library directory"
@@ -355,16 +478,16 @@ fi
 echo "*************************************************************************"
 echo "Setting up the codec2 build"
 echo "*************************************************************************"
-mkdir build_linux
-cd build_linux
+mkdir build_macos
+cd build_macos
 
 echo "*************************************************************************"
 echo "Building the codec2 library"
 echo "*************************************************************************"
 cmake ..
-make -j4
+make -j $ncpu
 
-if [ ! -f "src/libcodec2.so.1.2" ];
+if [ ! -f "src/libcodec2.1.2.dylib" ];
 then
 	echo "Something went wrong.  Codec2 software not built."
 	exit 1
@@ -376,9 +499,13 @@ echo "*************************************************************************"
 cd ../../../..
 cd freedata_gui
 npm i
-#npm audit fix --force
-#npm i
 npm run build
 
 # Return to the directory we started in
 cd ../..
+
+echo ""
+echo "*************************************************************************"
+echo "FreeDATA is installed, run with 'bash run-freedata-macos.sh'"
+echo "*************************************************************************"
+echo ""

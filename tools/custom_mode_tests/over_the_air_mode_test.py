@@ -52,18 +52,25 @@ class FreeDV:
 
 # Usage example
 if __name__ == "__main__":
-    MODE = FREEDV_MODE.data_ofdm_2438
+
+    # geht
+    MODE = FREEDV_MODE.data_ofdm_250
+    RX_MODE = FREEDV_MODE.datac4
+
+    # fail
+    #MODE = FREEDV_MODE.datac4
+    #RX_MODE = FREEDV_MODE.data_ofdm_250
+
     FRAMES = 1
 
     freedv_instance = FreeDV(MODE, 'config.ini')
+    freedv_rx_instance = FreeDV(RX_MODE, 'config.ini')
 
-
-
-    message = b'A'
-    txbuffer = freedv_instance.modulator.create_burst(MODE, 1, 100, message)
+    message = b'ABC'
+    txbuffer = freedv_instance.modulator.create_burst(MODE, FRAMES, 100, message)
     freedv_instance.write_to_file(txbuffer, 'ota_audio.raw')
     txbuffer = np.frombuffer(txbuffer, dtype=np.int16)
-    freedv_instance.demodulate(txbuffer)
+    freedv_rx_instance.demodulate(txbuffer)
 
 
 # ./src/freedv_data_raw_rx --framesperburst 2 --testframes DATAC0 - /dev/null --vv

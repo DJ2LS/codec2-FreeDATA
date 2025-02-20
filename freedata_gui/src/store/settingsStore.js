@@ -21,15 +21,15 @@ const defaultConfig = {
       rx_audio_level: 0,
       tx_audio_level: 0,
     },
-    MESH: {
-      enable_protocol: false,
-    },
     MODEM: {
       tx_delay: 0,
-      enable_hamc: false,
       enable_morse_identifier: false,
       maximum_bandwidth: 3000,
     },
+    NETWORK: {
+            modemaddress: "127.0.0.1",
+            modemport: 5000,
+        },
     RADIO: {
       control: "disabled",
       model_id: 0,
@@ -69,9 +69,23 @@ const defaultConfig = {
     },
     MESSAGES: {
       enable_auto_repeat: false,
-      adif_log_host: "127.0.0.1",
-      adif_log_port: "2237",
     },
+    SOCKET_INTERFACE: {
+      enable: false,
+      host: "127.0.0.1",
+      cmd_port: 8000,
+      data_port: 8001,
+    },
+
+    QSO_LOGGING: {
+      enable_adif_udp: false,
+      adif_udp_host: "127.0.0.1",
+      adif_udp_port: "2237",
+      enable_adif_wavelog: false,
+      adif_wavelog_host: "127.0.0.1",
+      adif_wavelog_api_key: "",
+    },
+
     GUI: {
       auto_run_browser: true,
     },

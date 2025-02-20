@@ -1,10 +1,13 @@
-# FreeDATA
 
-    FreeDATA is a versatile, open-source platform designed specifically for HF communications, leveraging Codec2 data modes for robust global digital communication. It features a network-based server-client architecture, a REST API, multi-platform compatibility, and a messaging system.
+# FreeDATA
+> FreeDATA is a versatile, **open-source platform designed specifically for HF communications**, leveraging **codec2** data modes for robust global digital communication. It features a network-based server-client architecture, a REST API, multi-platform compatibility, and a messaging system.
+
+> Please keep in mind, this project is still **under development** with many issues which need to be solved.
+
 
 [![CodeFactor](https://www.codefactor.io/repository/github/dj2ls/freedata/badge)](https://www.codefactor.io/repository/github/dj2ls/freedata)
+[![Modem tests](https://github.com/DJ2LS/FreeDATA/actions/workflows/modem_tests.yml/badge.svg)](https://github.com/DJ2LS/FreeDATA/actions/workflows/modem_tests.yml)
 
-Please keep in mind, this project is still under development with many issues which need to be solved.
 
 ![FreeDATA_main_screen.png](documentation%2FFreeDATA_main_screen.png)
 

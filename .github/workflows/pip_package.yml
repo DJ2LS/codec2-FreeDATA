@@ -19,7 +19,7 @@ jobs:
 
     - name: Install Linux dependencies
       run: |
-        sudo apt install -y portaudio19-dev libhamlib-dev libhamlib-utils build-essential cmake python3-libhamlib2 patchelf
+        sudo apt install -y portaudio19-dev libhamlib-dev libhamlib-utils build-essential cmake patchelf
 
     - name: Install Python dependencies
       run: |
@@ -38,7 +38,7 @@ jobs:
         python setup.py sdist bdist_wheel
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.11.0
+      uses: pypa/gh-action-pypi-publish@v1.12.4
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         user: __token__

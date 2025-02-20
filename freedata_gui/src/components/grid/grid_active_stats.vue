@@ -119,7 +119,10 @@ const scatterChartOptions = {
       position: "bottom",
       grid: {
         display: true,
-        lineWidth: 1, // Set the line width for x-axis grid lines
+        lineWidth: (context) => {
+          // Make the zero line thick (3) and other grid lines thin (1)
+          return context.tick.value === 0 ? 3 : 1;
+        },
       },
       ticks: {
         display: false,
@@ -130,7 +133,9 @@ const scatterChartOptions = {
       position: "left",
       grid: {
         display: true,
-        lineWidth: 1, // Set the line width for y-axis grid lines
+        lineWidth: (context) => {
+          return context.tick.value === 0 ? 3 : 1;
+        },
       },
       ticks: {
         display: false,
@@ -146,6 +151,7 @@ const scatterChartOptions = {
     },
   },
 };
+
 
 const scatterChartData = computed(() => ({
   datasets: [
@@ -179,7 +185,7 @@ onMounted(() => {
           role="tablist"
         >
           <a
-            class="py-0 list-group-item list-group-item-dark list-group-item-action"
+            class="py-0 list-group-item list-group-item-light list-group-item-action"
             data-bs-toggle="list"
             role="tab"
             aria-controls="list-waterfall"
@@ -189,7 +195,7 @@ onMounted(() => {
             <strong><i class="bi bi-water"></i></strong>
           </a>
           <a
-            class="py-0 list-group-item list-group-item-dark list-group-item-action"
+            class="py-0 list-group-item list-group-item-light list-group-item-action"
             data-bs-toggle="list"
             role="tab"
             aria-controls="list-scatter"
@@ -199,7 +205,7 @@ onMounted(() => {
             <strong><i class="bi bi-border-outer"></i></strong>
           </a>
           <a
-            class="py-0 list-group-item list-group-item-dark list-group-item-action"
+            class="py-0 list-group-item list-group-item-light list-group-item-action"
             data-bs-toggle="list"
             role="tab"
             aria-controls="list-chart"

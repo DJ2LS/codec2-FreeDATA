@@ -181,9 +181,9 @@ class DatabaseManagerMessages(DatabaseManager):
                 print(origin_info)
                 if origin_info and "location" in origin_info and origin_info["location"] is not None:
                     print(origin_info["location"])
-                    grid = origin_info["location"].get("gridsquare", "----")
+                    grid = origin_info["location"].get("gridsquare", "")
                 else:
-                    grid = "----"
+                    grid = ""
 
 
                 # Extract and adjust the frequency (Hz to MHz)

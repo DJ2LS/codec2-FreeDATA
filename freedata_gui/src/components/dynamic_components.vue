@@ -53,7 +53,11 @@ class gridWidget {
   category;
   //Unique ID for widget
   id;
-  constructor(component, size, text, quickfill, autoPlace, category, id) {
+  //if true add when quick fill (small) button is clicked
+  quickFillSM;
+  //Initial size and location if autoplace is false and using small quick fill
+   sizeSM;
+  constructor(component, size, text, quickfill, autoPlace, category, id, quickFillSM, sizeSM) {
     this.component2 = component;
     this.size = size;
     this.text = text;
@@ -61,6 +65,8 @@ class gridWidget {
     this.autoPlace = autoPlace;
     this.category = category;
     this.id = id;
+    this.quickFillSM = quickFillSM;
+    this.sizeSM = sizeSM
   }
 }
 
@@ -74,7 +80,9 @@ const gridWidgets = [
     true,
     true,
     "Activity",
-    8
+    8,
+    false,
+    { x: 0, y: 53, w: 6, h: 55 }
   ),
   new gridWidget(
     active_heard_stations,
@@ -83,160 +91,9 @@ const gridWidgets = [
     true,
     true,
     "Activity",
-    0
-  ),
-  new gridWidget(
-    active_stats,
-    { x: 16, y: 16, w: 8, h: 72 },
-    "Stats (waterfall, etc)",
-    true,
-    true,
-    "Stats",
-    1
-  ),
-  new gridWidget(
-    active_audio_level,
-    { x: 16, y: 0, w: 8, h: 15 },
-    "Audio main",
+    0,
     false,
-    true,
-    "Audio",
-    2
-  ),
-  new gridWidget(
-    grid_freq,
-    { x: 20, y: 8, w: 4, h: 8 },
-    "Frequency widget",
-    true,
-    true,
-    "Rig",
-    14
-  ),
-  new gridWidget(
-    active_rig_control,
-    { x: 6, y: 40, w: 9, h: 15 },
-    "Rig control main",
-    false,
-    true,
-    "Rig",
-    3
-  ),
-  new gridWidget(
-    grid_beacon,
-    { x: 3, y: 27, w: 3, h: 8 },
-    "Beacon button",
-    false,
-    true,
-    "Broadcasts",
-    16
-  ),
-  new gridWidget(
-    active_broadcasts,
-    { x: 6, y: 70, w: 6, h: 15 },
-    "Broadcasts main (horizontal)",
-    false,
-    true,
-    "Broadcasts",
-    4
-  ),
-  new gridWidget(
-    mini_heard_stations,
-    { x: 1, y: 1, w: 6, h: 54 },
-    "Heard stations list (small)",
-    false,
-    true,
-    "Activity",
-    5
-  ),
-  new gridWidget(
-    s_meter,
-    { x: 16, y: 0, w: 4, h: 8 },
-    "S-Meter",
-    true,
-    true,
-    "Rig",
-    6
-  ),
-  new gridWidget(
-    dbfs_meter,
-    { x: 20, y: 0, w: 4, h: 8 },
-    "Dbfs meter",
-    true,
-    true,
-    "Audio",
-    7
-  ),
-  new gridWidget(
-    active_broadcasts_vert,
-    { x: 6, y: 53, w: 10, h: 35 },
-    "Broadcasts main (vertical)",
-    true,
-    true,
-    "Broadcasts",
-    9
-  ),
-  new gridWidget(
-    grid_ptt,
-    { x: 2, y: 0, w: 5, h: 13 },
-    "Tx/PTT indicator",
-    true,
-    true,
-    "Rig",
-    10
-  ),
-  new gridWidget(
-    grid_mycall,
-    { x: 7, y: 0, w: 9, h: 13 },
-    "My callsign widget",
-    true,
-    true,
-    "Other",
-    11
-  ),
-  new gridWidget(
-    grid_mycall_small,
-    { x: 8, y: 40, w: 4, h: 8 },
-    "My callsign widget (small)",
-    false,
-    true,
-    "Other",
-    17
-  ),
-  new gridWidget(
-    grid_CQ_btn,
-    { x: 3, y: 27, w: 2, h: 8 },
-    "CQ button",
-    false,
-    true,
-    "Broadcasts",
-    12
-  ),
-  new gridWidget(
-    grid_ping,
-    { x: 3, y: 27, w: 4, h: 9 },
-    "Ping widget",
-    false,
-    true,
-    "Broadcasts",
-    13
-  ),
-  new gridWidget(
-    grid_stop,
-    { x: 0, y: 0, w: 2, h: 13 },
-    "Stop widget",
-    true,
-    true,
-    "Other",
-    15
-  ),
-  new gridWidget(
-    grid_tune,
-    { x: 16, y: 8, w: 2, h: 8 },
-    "Tune widget",
-    true,
-    true,
-    "Audio",
-    18
+    { x: 0, y: 53, w: 6, h: 55 }
   ),
   new gridWidget(
     grid_scatter,
@@ -245,7 +102,9 @@ const gridWidgets = [
     false,
     true,
     "Stats",
-    19
+    19,
+    false,
+    { x: 0, y: 53, w: 6, h: 55 }
   ),
   new gridWidget(
     grid_stats_chart,
@@ -254,25 +113,218 @@ const gridWidgets = [
     false,
     true,
     "Stats",
-    20
+    20,
+    false,
+    { x: 0, y: 114, w: 6, h: 30 }
   ),
   new gridWidget(
-    grid_swr_meter,
-    { x: 16, y: 0, w: 4, h: 8 },
-    "SWR",
+    active_stats,
+    { x: 16, y: 16, w: 8, h: 87 },
+    "Stats (waterfall, etc)",
+    true,
+    true,
+    "Stats",
+    1,
+    true,
+    { x: 12, y: 0, w: 12, h: 56 }
+  ),
+  new gridWidget(
+    active_audio_level,
+    { x: 16, y: 0, w: 8, h: 20 },
+    "Audio main",
+    false,
+    true,
+    "Audio",
+    2,
+    false,
+    { x: 0, y: 114, w: 6, h: 20 }
+  ),
+  new gridWidget(
+    grid_freq,
+    { x: 20, y: 8, w: 4, h: 8 },
+    "Frequency widget",
     true,
     true,
     "Rig",
-    21
+    14,
+    false,
+    { x: 0, y: 114, w: 6, h: 30 }
   ),
-    new gridWidget(
+  new gridWidget(
+    active_rig_control,
+    { x: 0, y: 108, w: 6, h: 25 },
+    "Rig control main",
+    true,
+    true,
+    "Rig",
+    3,
+    false,
+    { x: 0, y: 114, w: 6, h: 25 }
+  ),
+  new gridWidget(
+    grid_beacon,
+    { x: 3, y: 27, w: 3, h: 8 },
+    "Beacon button",
+    false,
+    true,
+    "Broadcasts",
+    16,
+    true,
+    { x: 0, y: 14, w: 12, h: 14 }
+  ),
+  new gridWidget(
+    active_broadcasts,
+    { x: 6, y: 70, w: 6, h: 25 },
+    "Broadcasts main (horizontal)",
+    false,
+    true,
+    "Broadcasts",
+    4,
+    false,
+    { x: 6, y: 70, w: 6, h: 25 }
+  ),
+  new gridWidget(
+    mini_heard_stations,
+    { x: 1, y: 1, w: 6, h: 54 },
+    "Heard stations list (small)",
+    false,
+    true,
+    "Activity",
+    5,
+    true,
+    { x: 0, y: 42, w: 12, h: 42 }
+  ),
+  new gridWidget(
+    s_meter,
+    { x: 16, y: 0, w: 4, h: 8 },
+    "S-Meter widget",
+    true,
+    true,
+    "Rig",
+    6,
+    false,
+    { x: 16, y: 0, w: 4, h: 8 }
+  ),
+  new gridWidget(
+    grid_swr_meter,
+    { x: 16, y: 8, w: 4, h: 8 },
+    "SWR widget",
+    true,
+    true,
+    "Rig",
+    21,
+    false,
+    { x: 16, y: 8, w: 4, h: 8 }
+  ),
+  new gridWidget(
+    dbfs_meter,
+    { x: 20, y: 0, w: 4, h: 8 },
+    "Dbfs meter",
+    true,
+    true,
+    "Audio",
+    7,
+    false,
+    { x: 20, y: 0, w: 4, h: 8 }
+  ),
+  new gridWidget(
+    active_broadcasts_vert,
+    { x: 16, y: 103, w: 8, h: 42 },
+    "Broadcasts main (vertical)",
+    true,
+    true,
+    "Broadcasts",
+    9,
+    false,
+    { x: 16, y: 103, w: 8, h: 42 }
+  ),
+  new gridWidget(
+    grid_ptt,
+    { x: 2, y: 0, w: 5, h: 13 },
+    "Tx/PTT indicator",
+    true,
+    true,
+    "Rig",
+    10,
+    true,
+    { x: 5, y: 0, w: 7, h: 14 }
+  ),
+  new gridWidget(
+    grid_mycall,
+    { x: 7, y: 0, w: 9, h: 13 },
+    "My callsign widget",
+    true,
+    true,
+    "Other",
+    11,
+    false,
+    { x: 7, y: 0, w: 9, h: 13 }
+  ),
+  new gridWidget(
+    grid_mycall_small,
+    { x: 8, y: 40, w: 4, h: 10 },
+    "My callsign widget (small)",
+    false,
+    true,
+    "Other",
+    17,
+    false,
+    { x: 8, y: 40, w: 4, h: 8 }
+  ),
+  new gridWidget(
+    grid_CQ_btn,
+    { x: 3, y: 27, w: 2, h: 8 },
+    "CQ button",
+    false,
+    true,
+    "Broadcasts",
+    12,
+    true,
+    { x: 0, y: 28, w: 12, h: 14 }
+  ),
+  new gridWidget(
+    grid_ping,
+    { x: 3, y: 27, w: 4, h: 9 },
+    "Ping widget",
+    false,
+    true,
+    "Broadcasts",
+    13,
+    true,
+    { x: 0, y: 84, w: 12, h: 9 }
+  ),
+  new gridWidget(
     grid_stations_map,
-    { x: 16, y: 0, w: 8, h: 100 },
+    { x: 6, y: 53, w: 10, h: 92 },
     "Station Map",
     true,
     true,
     "Other",
-    22
+    22,
+    true,
+    { x: 12, y: 56, w: 12, h: 92 }
+  ),
+  new gridWidget(
+    grid_stop,
+    { x: 0, y: 0, w: 2, h: 13 },
+    "Stop widget",
+    true,
+    true,
+    "Other",
+    15,
+    true,
+    { x: 0, y: 0, w: 5, h: 14 }
+  ),
+  new gridWidget(
+    grid_tune,
+    { x: 16, y: 8, w: 2, h: 8 },
+    "Tune widget",
+    false,
+    true,
+    "Audio",
+    18,
+    false,
+    { x: 16, y: 8, w: 2, h: 8 }
   )
   //Next new widget ID should be 23
 ];
@@ -354,7 +406,14 @@ function addNewWidget2(componentToAdd, saveToConfig) {
     if (saveToConfig) saveGridLayout();
   });
 }
-
+function addNewWidget2SM(componentToAdd, saveToConfig) {
+  const node = { ...componentToAdd.sizeSM, id: `w_${count.value++}`, component2: shallowRef(componentToAdd.component2), autoPlace: componentToAdd.autoPlace };
+  items.value.push(node);
+  nextTick(() => {
+    grid?.makeWidget(node.id);
+    if (saveToConfig) saveGridLayout();
+  });
+}
 function remove(widget) {
   const index = items.value.findIndex((w) => w.id === widget.id);
   if (index !== -1) {
@@ -390,7 +449,16 @@ function quickfill() {
   });
   saveGridLayout();
 }
-
+function quickfillSM() {
+  gridWidgets.forEach((gw) => {
+    if (gw.quickFillSM) {
+      gw.autoPlace = false;
+      addNewWidget2SM(gw, false);
+      gw.autoPlace = true;
+    }
+  });
+  saveGridLayout();
+}
 onMounted(() => {
   grid = GridStack.init({
     float: true,
@@ -402,10 +470,11 @@ onMounted(() => {
     resizable: { handles: "se,sw" }
   });
 
+  /*//Do not delete, aids in adjusting widget fill locations
   grid?.on("dragstop", (event, element) => {
     const node = element.gridstackNode;
-    console.info(`Moved #${node.id} to ${node.x}.${node.y}. Dimensions: ${node.w}x${node.h}`);
-  });
+    console.info(`Moved #${node.id} to ${node.x},${node.y}. Dimensions: ${node.w}x${node.h}`);
+  });*/
 
   grid?.on("change", onChange);
 
@@ -449,7 +518,7 @@ onMounted(() => {
    <!-- <i class="bi bi-grip-vertical h5">      </i>-->
 
   <span class="me-4 text-white" style="writing-mode: vertical-rl; transform: rotate(180deg);">
-    screen settings
+    grid edit
   </span>
 
 
@@ -511,17 +580,22 @@ onMounted(() => {
     </div>
     <div class="offcanvas-body">
       <p>
-        Grid widgets allow you to customize the display for your own usage. Here
-        you may add additional widgets to fit your needs. You can move and
-        resize the individual widgets!
+        Grid widgets allow you to customize the display. You may add additional widgets to fit your needs. You can move and resize the individual widgets!
       </p>
       <div>
         <button
-          class="btn btn-sm btn-outline-primary"
+          class="btn btn-outline-primary mb-2"
           type="button"
           @click="quickfill"
         >
           Fill grid with common widgets
+        </button>
+        <button
+          class="btn btn-outline-primary"
+          type="button"
+          @click="quickfillSM"
+        >
+          Fill grid for small screens
         </button>
       </div>
       <hr />

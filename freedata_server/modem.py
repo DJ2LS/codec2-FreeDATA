@@ -206,11 +206,10 @@ class RF:
         s = 0.5 * np.sin(2 * np.pi * f0 * t)
         signal = np.int16(s * 32767)  # Convert to 16-bit integer PCM format
 
-        # Increase audio level by 2 ( + 3dB )
-        increased_audio_level = self.tx_audio_level + 3
+        signal = audio.normalize_audio(signal)
 
         # Set audio volume and prepare buffer for transmission
-        txbuffer_out = audio.set_audio_volume(signal, increased_audio_level)
+        txbuffer_out = audio.set_audio_volume(signal, self.tx_audio_level)
 
         # Transmit audio
         self.enqueue_audio_out(txbuffer_out)
@@ -236,9 +235,8 @@ class RF:
             "[MDM] TRANSMIT", mode="MORSE"
         )
         start_of_transmission = time.time()
-
-        txbuffer_out = cw.MorseCodePlayer().text_to_signal(self.config['STATION'].mycall)
-
+        txbuffer_out = cw.MorseCodePlayer().text_to_signal(self.config['STATION'].get('mycall'))
+        txbuffer_out = audio.normalize_audio(txbuffer_out)
         # transmit audio
         self.enqueue_audio_out(txbuffer_out)
 
@@ -262,6 +260,7 @@ class RF:
 
         # Re-sample back up to 48k (resampler works on np.int16)
         x = np.frombuffer(txbuffer, dtype=np.int16)
+        x = audio.normalize_audio(x)
         x = audio.set_audio_volume(x, self.tx_audio_level)
 
         if self.radiocontrol not in ["tci"]:

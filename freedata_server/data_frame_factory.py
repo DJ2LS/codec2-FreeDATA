@@ -393,8 +393,10 @@ class DataFrameFactory:
         fec_frame[1:payload_per_frame] = bytes(payload[:fec_payload_length])
         return fec_frame
 
-    def build_test(self):
-        test_frame = bytearray(126)
+    def build_test(self, mode):
+        mode_int = codec2.freedv_get_mode_value_by_name(mode)
+        payload_per_frame = codec2.get_bytes_per_frame(mode_int) - 2
+        test_frame = bytearray(payload_per_frame)
         test_frame[:1] = bytes([FR_TYPE.TEST_FRAME.value])
         return test_frame
 

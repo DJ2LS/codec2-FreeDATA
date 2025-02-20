@@ -28,7 +28,7 @@ function getDateTime(timestampRaw) {
       <i class="bi bi-card-list" style="font-size: 1.2rem"></i>&nbsp;
       <strong>Activity</strong>
     </div>
-    <div class="card-body overflow-auto m-0 p-0" style="align-items: start">
+    <div class="card-body overflow-auto m-0" style="align-items: start">
       <div v-for="item in state.activities" :key="item[0]">
         <h6 style="text-align: start" class="mb-0">
         <span class="badge text-bg-primary">{{ item[1].origin }}</span>

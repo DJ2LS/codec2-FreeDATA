@@ -95,6 +95,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          draft: true
+          draft: false
           files: ./FreeDATA-Installer.exe
           tag_name: ${{ github.ref_name }}

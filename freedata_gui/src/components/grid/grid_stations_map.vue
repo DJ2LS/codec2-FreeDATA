@@ -5,6 +5,7 @@
         <button @click="zoomIn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-square"></i></button>
         <button @click="centerMap" class="btn btn-sm btn-secondary"><i class="bi bi-house-door"></i></button>
         <button @click="zoomOut" class="btn btn-sm btn-outline-secondary"><i class="bi bi-dash-square"></i></button>
+        <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
       </div>
 
       <div class="input-group input-group-sm ms-2">
@@ -25,7 +26,7 @@ import * as d3 from 'd3';
 import { feature } from 'topojson-client';
 import { locatorToLatLng, distance } from 'qth-locator';
 import { setActivePinia } from 'pinia';
-import pinia from '../../store/index'; // Import your Pinia instance
+import pinia from '../../store/index';
 import { useStateStore } from '../../store/stateStore.js';
 
 // Activate Pinia
@@ -198,13 +199,26 @@ const updatePinsAndLines = (g) => {
   const heardStations = toRaw(state.heard_stations); // Ensure it's the raw data
   const points = [];
 
+
   // Prepare points for heard stations
   heardStations.forEach(item => {
-    if (item.gridsquare && item.gridsquare.trim() !== '' && item.origin) {
-      const [lat, lng] = locatorToLatLng(item.gridsquare);
-      points.push({ lat, lon: lng, origin: item.origin, gridsquare: item.gridsquare });
+    if (
+      item.gridsquare &&
+      item.gridsquare.trim() !== '' &&
+      item.gridsquare.trim() !== '------' &&
+      item.origin
+    ) {
+      try {
+        const [lat, lng] = locatorToLatLng(item.gridsquare);
+        if (lat != null && lng != null) {
+          points.push({ lat, lon: lng, origin: item.origin, gridsquare: item.gridsquare });
+        }
+      } catch (error) {
+        console.error(`Error converting gridsquare ${item.gridsquare}:`, error);
+      }
     }
   });
+
 
   // Add your own station's pin if mygrid is defined
   let mygrid = settings.remote.STATION.mygrid;

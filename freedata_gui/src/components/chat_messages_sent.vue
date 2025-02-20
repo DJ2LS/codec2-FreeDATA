@@ -29,7 +29,7 @@
     </div>
     <!-- message area -->
     <div :class="messageWidthClass" class="align-items-end">
-      <div class="card bg-secondary text-white">
+      <div class="card">
         <div
           v-for="attachment in message.attachments"
           :key="attachment.id"
@@ -56,8 +56,8 @@
           <p class="card-text text-break" v-html="parsedMessageBody"></p>
         </div>
 
-        <div class="card-footer p-0 bg-secondary border-top-0">
-          <p class="text p-0 m-0 me-1 text-end">
+        <div class="card-footer p-1 border-top-0">
+          <p class="text p-0 m-0 mb-1 me-1 text-end">
             <span class="badge badge-primary mr-2" :class="{
                 'bg-danger': message.status == 'failed',
                 'bg-primary': message.status == 'transmitting',
@@ -66,7 +66,7 @@
             >
               {{ message.status }}
             </span>
-            | <span class="badge badge-primary mr-2"> attempt: {{ message.attempt + 1 }} </span>|<span class="badge badge-primary mr-2"> {{ getDateTime }} UTC</span>
+            | <span class="badge text-bg-light mr-2"> attempt: {{ message.attempt + 1 }} </span>|<span class="badge text-bg-light mr-2"> {{ getDateTime }} UTC</span>
           </p>
         </div>
 
@@ -202,8 +202,26 @@ export default {
     },
 
     parsedMessageBody() {
-      // Use marked to parse markdown and DOMPurify to sanitize
-      return DOMPurify.sanitize(marked.parse(this.message.body));
+     // Parse markdown to HTML
+  let parsedHTML = marked.parse(this.message.body);
+
+  // Sanitize the HTML
+  let sanitizedHTML = DOMPurify.sanitize(parsedHTML);
+
+  // Create a temporary DOM element to manipulate the sanitized output
+  let tempDiv = document.createElement("div");
+  tempDiv.innerHTML = sanitizedHTML;
+
+  // Modify all links to open in a new tab
+  tempDiv.querySelectorAll("a").forEach(link => {
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer"); // Security best practice
+  });
+
+  // Return the updated HTML
+  return tempDiv.innerHTML;
+
+
     },
   },
 };

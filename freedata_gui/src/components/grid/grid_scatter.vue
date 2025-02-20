@@ -40,10 +40,13 @@ const scatterChartOptions = {
       position: "bottom",
       grid: {
         display: true,
-        lineWidth: 1, // Set the line width for x-axis grid lines
+        lineWidth: (context) => {
+          // Make the zero line thick (3) and other grid lines thin (1)
+          return context.tick.value === 0 ? 3 : 1;
+        },
       },
       ticks: {
-        display: true,
+        display: false,
       },
     },
     y: {
@@ -51,10 +54,12 @@ const scatterChartOptions = {
       position: "left",
       grid: {
         display: true,
-        lineWidth: 1, // Set the line width for y-axis grid lines
+        lineWidth: (context) => {
+          return context.tick.value === 0 ? 3 : 1;
+        },
       },
       ticks: {
-        display: true,
+        display: false,
       },
     },
   },
@@ -67,6 +72,8 @@ const scatterChartOptions = {
     },
   },
 };
+
+
 
 const scatterChartData = computed(() => ({
   datasets: [
@@ -83,8 +90,19 @@ const scatterChartData = computed(() => ({
 </script>
 
 <template>
-  <div class="w-100 h-100">
-    <Scatter :data="scatterChartData" :options="scatterChartOptions" />
-  </div>
+
+    <div class="card h-100">
+    <!--325px-->
+    <div class="card-header">
+      <i class="bi bi-border-outer" style="font-size: 1.2rem"></i>&nbsp;
+      <strong>Scatter diagram</strong>
+    </div>
+    <div class="card-body overflow-auto p-0">
+      <Scatter :data="scatterChartData" :options="scatterChartOptions" />
+    </div>
+      </div>
+
+
+
   <!--278px-->
 </template>
