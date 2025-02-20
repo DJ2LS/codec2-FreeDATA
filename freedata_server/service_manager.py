@@ -40,6 +40,7 @@ class SM:
 
                 if cmd in ['start'] and not self.modem:
                     self.config = self.app.config_manager.read()
+
                     self.start_radio_manager()
                     self.start_modem()
 
@@ -47,6 +48,9 @@ class SM:
                         self.socket_interface_manager = SocketInterfaceHandler(self.modem, self.app.config_manager, self.state_manager, self.event_manager).start_servers()
                     else:
                         self.socket_interface_manager = None
+
+
+
 
                 elif cmd in ['stop'] and self.modem:
                     self.stop_modem()
@@ -107,7 +111,8 @@ class SM:
         self.frame_dispatcher = frame_dispatcher.DISPATCHER(self.config, 
                                                             self.event_manager,
                                                             self.state_manager,
-                                                            self.modem)
+                                                            self.modem,
+                                                            self.socket_interface_manager)
         self.frame_dispatcher.start()
 
         self.event_manager.modem_started()
@@ -152,7 +157,7 @@ class SM:
             return [False, False]
 
     def start_radio_manager(self):
-        self.app.radio_manager = radio_manager.RadioManager(self.config, self.state_manager, self.event_manager)
+        self.app.radio_manager = radio_manager.RadioManager(self.config, self.state_manager, self.event_manager, self.socket_interface_manager)
 
     def stop_radio_manager(self):
         if hasattr(self.app, 'radio_manager'):

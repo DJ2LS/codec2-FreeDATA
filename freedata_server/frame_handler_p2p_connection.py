@@ -33,7 +33,7 @@ class P2PConnectionFrameHandler(frame_handler.FrameHandler):
                                         self.modem,
                                         frame['origin'],
                                         frame['destination_crc'],
-                                        self.states, self.event_manager)
+                                        self.states, self.event_manager, self.socket_interface_manager)
                 session.session_id = session_id
                 self.states.register_p2p_connection_session(session)
 

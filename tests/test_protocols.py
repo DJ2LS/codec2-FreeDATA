@@ -27,7 +27,7 @@ class TestProtocols(unittest.TestCase):
         cls.event_queue = queue.Queue()
         cls.event_manager = EventManager([cls.event_queue])
 
-        cls.radio_manager = RadioManager(cls.config, cls.state_manager, cls.event_manager)
+        cls.radio_manager = RadioManager(cls.config, cls.state_manager, cls.event_manager, None)
         cls.modem_transmit_queue = queue.Queue()
 
         cls.modem = modem.RF(cls.config, cls.event_queue, queue.Queue(), queue.Queue(), cls.state_manager, cls.radio_manager)
@@ -38,7 +38,7 @@ class TestProtocols(unittest.TestCase):
         cls.frame_dispatcher = DISPATCHER(cls.config, 
                                           cls.event_manager,
                                           cls.state_manager,
-                                          cls.modem)
+                                          cls.modem, None)
 
     def shortcutTransmission(self, frame_bytes):
         self.frame_dispatcher.process_data(frame_bytes, None, len(frame_bytes), 0, 0, mode_name="TEST")

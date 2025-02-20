@@ -279,10 +279,14 @@ class StateManager:
             # Check IRS sessions
             if session_id in self.arq_irs_sessions:
                 return self.arq_irs_sessions[session_id].dxcall
+#Part of the code to solve P2P connections with the ability to respond to SSIDs other than the one set on the modem.
+#I will circle back around and check that this is really the best way to handle this edge case...
+            if session_id in self.p2p_connection_sessions:
+                return self.p2p_connection_sessions[session_id].destination
 
             # If not found in either session dictionary
-            self.log(f"Session ID {session_id} not found in ISS or IRS sessions", isWarning=True)
+            print(f"Session ID {session_id} not found in ISS or IRS sessions")
             return None
         except KeyError:
-            self.log(f"Error retrieving session ID {session_id}", isError=True)
+            print(f"Error retrieving session ID {session_id}")
             return None

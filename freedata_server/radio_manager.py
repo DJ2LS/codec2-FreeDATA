@@ -4,10 +4,11 @@ import serial_ptt
 import threading
 
 class RadioManager:
-    def __init__(self, config, state_manager, event_manager):
+    def __init__(self, config, state_manager, event_manager, socket_interface_manager):
         self.config = config
         self.state_manager = state_manager
         self.event_manager = event_manager
+        self.socket_interface_manager = socket_interface_manager
 
         self.radiocontrol = config['RADIO']['control']
         self.rigctld_ip = config['RIGCTLD']['ip']
@@ -38,6 +39,10 @@ class RadioManager:
         # set disabled ptt twice for reducing chance of stuck PTT
         if not state:
             self.radio.set_ptt(state)
+
+        # send ptt state via socket interface
+        if self.socket_interface_manager:
+            self.socket_interface_manager.command_server.command_handler.socket_respond_ptt(state)
 
 
     def set_tuner(self, state):

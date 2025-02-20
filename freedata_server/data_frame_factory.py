@@ -189,7 +189,7 @@ class DataFrameFactory:
 
         # p2p payload frame ack
         self.template_list[FR_TYPE.P2P_CONNECTION_PAYLOAD_ACK.value] = {
-            "frame_length": self.LENGTH_SIG1_FRAME,
+            "frame_length": self.LENGTH_ACK_FRAME,
             "session_id": 1,
             "sequence_id": 1,
         }
@@ -228,6 +228,10 @@ class DataFrameFactory:
 
             if not isinstance(item_length, int):
                 item_length = len(content[key])
+
+            print(frame_length)
+            print(item_length)
+            print(content)
             if buffer_position + item_length > frame_length:
                 raise OverflowError("Frame data overflow!")
             frame[buffer_position: buffer_position + item_length] = content[key]
@@ -240,7 +244,7 @@ class DataFrameFactory:
         buffer_position = 1
         # Handle the case where the frame type is not recognized
         #raise ValueError(f"Unknown frame type: {frametype}")
-        if mode_name in ["SIGNALLING_ACK"]:
+        if mode_name in ["SIGNALLING_ACK"] and int.from_bytes(frame[:1], "big") not in [FR_TYPE.P2P_CONNECTION_PAYLOAD_ACK.value]:
             frametype = FR_TYPE.ARQ_BURST_ACK.value
             frame_template = self.template_list.get(frametype)
             frame = bytes([frametype]) + frame
@@ -532,6 +536,7 @@ class DataFrameFactory:
             "sequence_id": sequence_id.to_bytes(1, 'big'),
             "data": data,
         }
+        print(self.get_bytes_per_frame(freedv_mode))
         return self.construct(
             FR_TYPE.P2P_CONNECTION_PAYLOAD,
             payload,

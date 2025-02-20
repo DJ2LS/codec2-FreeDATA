@@ -23,7 +23,7 @@ class P2PConnectionCommand(TxCommand):
     def run(self, event_queue: Queue, modem):
         try:
             self.emit_event(event_queue)
-            session = P2PConnection(self.config, modem, self.origin, self.destination, self.state_manager, self.event_manager, self.socket_command_handler)
+            session = P2PConnection(self.config, modem, self.origin, self.destination, self.state_manager, self.event_manager, self.socket_interface_manager)
             print(session)
             if session.session_id:
                 self.state_manager.register_p2p_connection_session(session)

@@ -74,7 +74,7 @@ class TestARQSession(unittest.TestCase):
         cls.iss_frame_dispatcher = DISPATCHER(cls.config, 
                                           cls.iss_event_manager,
                                           cls.iss_state_manager, 
-                                          cls.iss_modem)
+                                          cls.iss_modem, None)
 
         # IRS
         cls.irs_state_manager = StateManager(queue.Queue())
@@ -87,7 +87,7 @@ class TestARQSession(unittest.TestCase):
         cls.irs_frame_dispatcher = DISPATCHER(cls.config, 
                                           cls.irs_event_manager,
                                           cls.irs_state_manager, 
-                                          cls.irs_modem)
+                                          cls.irs_modem, None)
 
         # simulate a busy condition
         cls.irs_state_manager.channel_busy_slot = [True, False, False, False, False]

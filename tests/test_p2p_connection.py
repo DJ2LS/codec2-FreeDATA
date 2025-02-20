@@ -21,8 +21,10 @@ from state_manager import StateManager
 from data_frame_factory import DataFrameFactory
 import codec2
 import p2p_connection
-
+from socket_interface import SocketInterfaceHandler
 from socket_interface_commands import SocketCommandHandler
+import socket
+
 
 class TestModem:
     def __init__(self, event_q, state_q):
@@ -73,30 +75,65 @@ class TestP2PConnectionSession(unittest.TestCase):
 
 
         cls.iss_modem = TestModem(cls.iss_event_queue, cls.iss_state_queue)
+
+        conf = cls.iss_config_manager.read()
+        conf['SOCKET_INTERFACE']['cmd_port'] = 8000
+        conf['SOCKET_INTERFACE']['data_port'] = 8001
+        cls.iss_config_manager.write(conf)
+
+        cls.iss_socket_interface_manager = SocketInterfaceHandler(cls.iss_modem, cls.iss_config_manager, cls.iss_state_manager, cls.iss_event_manager).start_servers()
+
+        cls.iss_socket_cmd_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.iss_socket_cmd_client.connect(('127.0.0.1', 8000))
+
+        cls.iss_socket_data_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.iss_socket_data_client.connect(('127.0.0.1', 8001))
+
+        threading.Thread(target=cls.read_from_socket, args=[cls, cls.iss_socket_cmd_client, 'CMD', 'ISS'], daemon=False).start()
+        threading.Thread(target=cls.read_from_socket, args=[cls, cls.iss_socket_data_client, 'DATA', 'ISS'], daemon=False).start()
+
+
         cls.iss_frame_dispatcher = DISPATCHER(cls.config,
                                               cls.iss_event_manager,
                                               cls.iss_state_manager,
-                                              cls.iss_modem)
-
-        #cls.iss_socket_interface_handler = SocketInterfaceHandler(cls.iss_modem, cls.iss_config_manager, cls.iss_state_manager, cls.iss_event_manager)
-        #cls.iss_socket_command_handler = CommandSocket(TestSocket(), '127.0.0.1', 51234)
+                                              cls.iss_modem, cls.iss_socket_interface_manager)
 
         # IRS
+        cls.irs_config_manager = config_manager
         cls.irs_state_manager = StateManager(queue.Queue())
         cls.irs_event_manager = EventManager([queue.Queue()])
         cls.irs_event_queue = queue.Queue()
         cls.irs_state_queue = queue.Queue()
         cls.irs_p2p_data_queue = queue.Queue()
         cls.irs_modem = TestModem(cls.irs_event_queue, cls.irs_state_queue)
+
+        conf = cls.irs_config_manager.read()
+        conf['SOCKET_INTERFACE']['cmd_port'] = 9000
+        conf['SOCKET_INTERFACE']['data_port'] = 9001
+        cls.irs_config_manager.write(conf)
+
+        cls.irs_socket_interface_manager = SocketInterfaceHandler(cls.irs_modem, cls.irs_config_manager, cls.irs_state_manager, cls.irs_event_manager).start_servers()
+
+        cls.irs_socket_cmd_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.irs_socket_cmd_client.connect(('127.0.0.1', 9000))
+
+        cls.irs_socket_data_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.irs_socket_data_client.connect(('127.0.0.1', 8001))
+
+        threading.Thread(target=cls.read_from_socket, args=[cls, cls.irs_socket_cmd_client, 'CMD', 'IRS'], daemon=False).start()
+        threading.Thread(target=cls.read_from_socket, args=[cls, cls.irs_socket_data_client, 'DATA', 'IRS'], daemon=False).start()
+
         cls.irs_frame_dispatcher = DISPATCHER(cls.config,
                                               cls.irs_event_manager,
                                               cls.irs_state_manager,
-                                              cls.irs_modem)
+                                              cls.irs_modem,cls.irs_socket_interface_manager)
 
         # Frame loss probability in %
         cls.loss_probability = 30
 
         cls.channels_running = True
+
+        cls.connected_event = threading.Event()
 
         cls.disconnect_received = False
 
@@ -110,7 +147,7 @@ class TestP2PConnectionSession(unittest.TestCase):
                     continue
 
                 frame_bytes = transmission['bytes']
-                frame_dispatcher.new_process_data(frame_bytes, None, len(frame_bytes), 0, 0)
+                frame_dispatcher.process_data(frame_bytes, None, len(frame_bytes), 0, 0, "test")
             except queue.Empty:
                 continue
         self.logger.info(f"[{threading.current_thread().name}] Channel closed.")
@@ -148,50 +185,42 @@ class TestP2PConnectionSession(unittest.TestCase):
         length = random.randint(min_length, max_length)
         return ''.join(random.choices(string.ascii_letters, k=length))#
 
-    def DisabledtestARQSessionSmallPayload(self):
-        # set Packet Error Rate (PER) / frame loss probability
-        self.loss_probability = 0
+    def read_from_socket(self, socket_instance, type=None, direction=None):
+        while True:
+            try:
+                # Receive messages from the server
+                data = socket_instance.recv(48)
+                if not data:
+                    # If no data is received, break out of the loop
+                    print(f"Disconnected from server: {type}, {direction}")
+                    break
+                data = data.decode()
+                print(f"\nReceived from server: {type}, {direction}: {data}\n", end='')
+                if 'CONNECTED AA1AAA-1 BB2BBB-2 0' in data:
+                    self.connected_event.set()
 
+            except Exception as e:
+                print(f"Error receiving data: {type}, {direction}: {e}")
+                socket_instance.close()
+                break
+
+    def testConnect(self):
+
+        self.loss_probability = 0
         self.establishChannels()
 
-        handler = SocketCommandHandler(TestSocket(self), self.iss_modem, self.iss_config_manager, self.iss_state_manager, self.iss_event_manager)
-        handler.handle_connect(["AA1AAA-1", "BB2BBB-2"])
-
-        self.connected_event = threading.Event()
+        time.sleep(2)
+        cmd = 'CONNECT AA1AAA-1 BB2BBB-2 2300\r\n'
+        self.iss_socket_cmd_client.sendall(cmd.encode('utf-8'))
         self.connected_event.wait()
 
-        for session_id in self.iss_state_manager.p2p_connection_sessions:
-            session = self.iss_state_manager.get_p2p_connection_session(session_id)
-            session.ENTIRE_CONNECTION_TIMEOUT = 15
-            # Generate and add 5 random entries to the queue
-            for _ in range(3):
-                min_length = (30 * _ ) + 1
-                max_length = (30 * _ ) + 1
-                print(min_length)
-                print(max_length)
-                random_entry = self.generate_random_string(min_length, max_length)
-                session.p2p_data_tx_queue.put(random_entry)
+        data = 'TEST\r\n'
+        self.iss_socket_data_client.sendall(data.encode('utf-8'))
 
-            session.p2p_data_tx_queue.put('12345')
         self.waitAndCloseChannels()
 
 
-class TestSocket:
-    def __init__(self, test_class):
-        self.sent_data = []  # To capture data sent through this socket
-        self.test_class = test_class
-    def sendall(self, data):
-        print(f"Mock sendall called with data: {data}")
-        self.sent_data.append(data)
-        self.event_handler(data)
 
-    def event_handler(self, data):
-        if b'CONNECTED AA1AAA-1 BB2BBB-2 0\r\n' in self.sent_data:
-            self.test_class.connected_event.set()
-
-        if b'DISCONNECTED\r\n' in self.sent_data:
-            self.disconnect_received = True
-            self.test_class.assertEqual(b'DISCONNECTED\r\n', b'DISCONNECTED\r\n')
 
 if __name__ == '__main__':
     unittest.main()
